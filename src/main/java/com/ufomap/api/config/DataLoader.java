@@ -3,16 +3,23 @@ package com.ufomap.api.config;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ufomap.api.dto.SightingDTO;
 import com.ufomap.api.model.Sighting;
 import com.ufomap.api.repository.SightingRepository;
+import com.ufomap.api.service.SightingService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -29,6 +36,9 @@ public class DataLoader {
     private static final Logger logger = LoggerFactory.getLogger(DataLoader.class);
 
     private final SightingRepository sightingRepository;
+
+    private final SightingService sightingService;
+
 
     @Value("classpath:data/sightings.json")
     private Resource sightingsResource;
@@ -118,4 +128,6 @@ public class DataLoader {
             logger.error("Failed to load initial sightings data: {}", e.getMessage(), e);
         }
     }
+
+
 }

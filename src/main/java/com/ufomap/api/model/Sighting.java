@@ -22,10 +22,13 @@ public class Sighting {
 
     private LocalDateTime dateTime;
 
+    @Column(length = 100)
     private String city;
 
+    @Column(length = 50)
     private String state;
 
+    @Column(length = 100)
     private String country;
 
     private String shape;

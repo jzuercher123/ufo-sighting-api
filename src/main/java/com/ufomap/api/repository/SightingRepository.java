@@ -1,6 +1,10 @@
 package com.ufomap.api.repository;
 
 import com.ufomap.api.model.Sighting;
+// Assuming you create this enum for submission status:
+// import com.ufomap.api.model.SubmissionStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,44 +15,114 @@ import java.util.List;
 @Repository
 public interface SightingRepository extends JpaRepository<Sighting, Long> {
 
-    List<Sighting> findByCountry(String country);
+    // Simple finders - now case-insensitive
+    List<Sighting> findByCountryIgnoreCase(String country);
+    Page<Sighting> findByCountryIgnoreCase(String country, Pageable pageable); // Example with pagination
 
-    List<Sighting> findByState(String state);
+    List<Sighting> findByStateIgnoreCase(String state);
+    Page<Sighting> findByStateIgnoreCase(String state, Pageable pageable); // Example with pagination
 
-    List<Sighting> findByCity(String city);
+    List<Sighting> findByCityIgnoreCase(String city);
+    Page<Sighting> findByCityIgnoreCase(String city, Pageable pageable); // Example with pagination
 
-    List<Sighting> findByShape(String shape);
+    List<Sighting> findByShapeIgnoreCase(String shape);
+    Page<Sighting> findByShapeIgnoreCase(String shape, Pageable pageable); // Example with pagination
 
-    List<Sighting> findBySubmissionStatus(String status);
+    // If using an enum for SubmissionStatus in your Sighting model:
+    // List<Sighting> findBySubmissionStatus(SubmissionStatus status);
+    // Page<Sighting> findBySubmissionStatus(SubmissionStatus status, Pageable pageable);
+    // If still using String and want case-insensitivity:
+    List<Sighting> findBySubmissionStatusIgnoreCase(String status);
+    Page<Sighting> findBySubmissionStatusIgnoreCase(String status, Pageable pageable);
 
-    List<Sighting> findBySubmittedBy(String submittedBy);
+    List<Sighting> findBySubmittedByIgnoreCase(String submittedBy);
+    Page<Sighting> findBySubmittedByIgnoreCase(String submittedBy, Pageable pageable);
 
+
+    /**
+     * Finds sightings based on various filter criteria.
+     * All textual comparisons for specific fields (shape, city, country, state) are case-insensitive.
+     * The searchText performs a case-insensitive "contains" search across multiple fields.
+     *
+     * @param shape      Optional sighting shape (case-insensitive).
+     * @param city       Optional city name (case-insensitive).
+     * @param country    Optional country name (case-insensitive).
+     * @param state      Optional state name (case-insensitive).
+     * @param searchText Optional text to search within city, state, country, summary, or shape (case-insensitive).
+     * @return A Page of Sighting objects matching the criteria.
+     */
     @Query("SELECT s FROM Sighting s WHERE " +
-            "(:shape IS NULL OR s.shape = :shape) AND " +
-            "(:city IS NULL OR s.city = :city) AND " +
-            "(:country IS NULL OR s.country = :country) AND " +
-            "(:state IS NULL OR s.state = :state) AND " +
-            "(:searchText IS NULL OR " +
-            "s.city LIKE %:searchText% OR " +
-            "s.state LIKE %:searchText% OR " +
-            "s.country LIKE %:searchText% OR " +
-            "s.summary LIKE %:searchText% OR " +
-            "s.shape LIKE %:searchText%)")
-    List<Sighting> findWithFilters(
+            "(:shape IS NULL OR LOWER(s.shape) = LOWER(:shape)) AND " +
+            "(:city IS NULL OR LOWER(s.city) = LOWER(:city)) AND " +
+            "(:country IS NULL OR LOWER(s.country) = LOWER(:country)) AND " +
+            "(:state IS NULL OR LOWER(s.state) = LOWER(:state)) AND " +
+            "(:searchText IS NULL OR (" +
+            "LOWER(s.city) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+            "LOWER(s.state) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+            "LOWER(s.country) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+            "LOWER(s.summary) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+            "LOWER(s.shape) LIKE LOWER(CONCAT('%', :searchText, '%'))" +
+            "))")
+    Page<Sighting> findWithFilters(
             @Param("shape") String shape,
             @Param("city") String city,
             @Param("country") String country,
             @Param("state") String state,
             @Param("searchText") String searchText
+            // Added Pageable for pagination and sorting
     );
 
+    // If you don't want pagination for findWithFilters yet, you can keep the List version:
+    // Just remove Pageable from parameters and change return type to List<Sighting>
+    // @Query("SELECT s FROM Sighting s WHERE " +
+    //         "(:shape IS NULL OR LOWER(s.shape) = LOWER(:shape)) AND " +
+    //         "(:city IS NULL OR LOWER(s.city) = LOWER(:city)) AND " +
+    //         "(:country IS NULL OR LOWER(s.country) = LOWER(:country)) AND " +
+    //         "(:state IS NULL OR LOWER(s.state) = LOWER(:state)) AND " +
+    //         "(:searchText IS NULL OR (" +
+    //         "LOWER(s.city) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+    //         "LOWER(s.state) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+    //         "LOWER(s.country) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+    //         "LOWER(s.summary) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
+    //         "LOWER(s.shape) LIKE LOWER(CONCAT('%', :searchText, '%'))" +
+    //         "))")
+    // List<Sighting> findWithFiltersList( // Renamed to avoid conflict if you keep both
+    //         @Param("shape") String shape,
+    //         @Param("city") String city,
+    //         @Param("country") String country,
+    //         @Param("state") String state,
+    //         @Param("searchText") String searchText
+    // );
+
+
+    /**
+     * Finds sightings within a given geographical bounding box.
+     *
+     * @param north The northern latitude boundary.
+     * @param south The southern latitude boundary.
+     * @param east  The eastern longitude boundary.
+     * @param west  The western longitude boundary.
+     * @return A Page of Sighting objects within the bounds.
+     */
     @Query("SELECT s FROM Sighting s WHERE " +
             "s.latitude BETWEEN :south AND :north AND " +
             "s.longitude BETWEEN :west AND :east")
-    List<Sighting> findInBounds(
+    Page<Sighting> findInBounds(
             @Param("north") Double north,
             @Param("south") Double south,
             @Param("east") Double east,
             @Param("west") Double west
+            // Added Pageable for pagination and sorting
     );
+
+    // List version for findInBounds if pagination is not immediately needed:
+    // @Query("SELECT s FROM Sighting s WHERE " +
+    //         "s.latitude BETWEEN :south AND :north AND " +
+    //         "s.longitude BETWEEN :west AND :east")
+    // List<Sighting> findInBoundsList( // Renamed
+    //         @Param("north") Double north,
+    //         @Param("south") Double south,
+    //         @Param("east") Double east,
+    //         @Param("west") Double west
+    // );
 }

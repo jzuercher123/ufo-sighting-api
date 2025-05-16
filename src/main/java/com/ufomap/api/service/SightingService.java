@@ -5,6 +5,8 @@ import com.ufomap.api.exception.ResourceNotFoundException;
 import com.ufomap.api.model.Sighting;
 import com.ufomap.api.repository.SightingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,7 +19,7 @@ public class SightingService {
 
     private final SightingRepository sightingRepository;
 
-    public List<SightingDTO> getAllSightings() {
+    public List<SightingDTO> getAllSightings(SpringDataWebProperties.Pageable pageable) {
         return sightingRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -34,14 +36,14 @@ public class SightingService {
             String city,
             String country,
             String state,
-            String searchText) {
+            String searchText, Pageable pageable) {
 
         return sightingRepository.findWithFilters(shape, city, country, state, searchText).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public List<SightingDTO> getSightingsInBounds(Double north, Double south, Double east, Double west) {
+    public List<SightingDTO> getSightingsInBounds(Double north, Double south, Double east, Double west, Pageable pageable) {
         return sightingRepository.findInBounds(north, south, east, west).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
