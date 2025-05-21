@@ -207,9 +207,6 @@ On application startup, if the `sightings` table in the database is empty, the `
 * CSRF protection is disabled for simplicity in this API, which is common for stateless REST APIs.
 * CORS is configured to allow requests from any origin (`*`) for development purposes. This should be restricted in a production environment.
 
-## Project Structure
-
-ufo-sighting-api/├── .mvn/├── src/│   ├── main/│   │   ├── java/com/ufomap/api/│   │   │   ├── config/          # Configuration classes (e.g., DataLoader)│   │   │   ├── controller/      # REST API controllers│   │   │   ├── dto/             # Data Transfer Objects│   │   │   ├── exception/       # Custom exceptions and global exception handler│   │   │   ├── model/           # JPA entities and enums│   │   │   ├── repository/      # Spring Data JPA repositories│   │   │   ├── security/        # Spring Security configuration│   │   │   ├── service/         # Business logic services│   │   │   ├── sync/            # Update handling logic (Update.java, UpdateHandler.java)│   │   │   └── UfoSightingApiApplication.java # Main application class│   │   └── resources/│   │       ├── data/│   │       │   └── sightings.json # Initial sighting data│   │       ├── application.properties # Application configuration│   │       └── static/            # Static resources (if any)│   │       └── templates/         # View templates (if any)│   └── test/│       └── java/com/ufomap/api/ # Unit and integration tests├── pom.xml                        # Maven project configuration├── README.md                      # This file└── qodana.yaml                    # Qodana static analysis configuration
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute, please follow these steps:
