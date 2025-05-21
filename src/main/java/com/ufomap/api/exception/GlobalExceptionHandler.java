@@ -1,11 +1,10 @@
 package com.ufomap.api.exception;
 
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode; // <-- Add this import
-
-import lombok.Builder;
+import lombok.EqualsAndHashCode;
+// import lombok.Builder; // Builder not used on these error responses
 import lombok.Data;
-import lombok.Data;
+// import lombok.Data; // Removed duplicate import
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -53,6 +52,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class) // Example: Handling invalid enum conversion
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(), // Often contains useful info like "Unknown submission status: xyz"
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
@@ -75,7 +85,7 @@ class ErrorResponse {
 }
 
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true) // callSuper = true is good practice if extending a class with @EqualsAndHashCode
 class ValidationErrorResponse extends ErrorResponse {
     private Map<String, String> fieldErrors;
 

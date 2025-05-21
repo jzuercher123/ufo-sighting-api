@@ -1,64 +1,30 @@
 package com.ufomap.api.sync;
 
-import com.ufomap.api.model.Sighting; // Assuming Sighting model exists
-import com.ufomap.api.service.SightingService; // To interact with Sighting data
-import com.ufomap.api.exception.ResourceNotFoundException; // For handling missing sightings
+import com.ufomap.api.dto.SightingDTO; // For the convertToDTO helper, if SightingService.updateSighting expects DTO
+import com.ufomap.api.model.Sighting;
+import com.ufomap.api.service.SightingService;
+import com.ufomap.api.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime; // For UpdateSource
-
-// Records defined in the previous step (assuming they are in the same package or imported)
-/*
-record SightingUpdateData(
-    Optional<String> city,
-    Optional<String> state,
-    // ... other fields
-    Optional<String> submissionStatus
-) {}
-
-record UpdateSource(
-    String sourceSystem,
-    Optional<String> updatedByUserId,
-    LocalDateTime updateTimestamp
-) {}
-
-interface Update<T, ID> {
-    ID getTargetId();
-    T getDataPayload();
-    UpdateSource getSourceInfo();
-}
-
-class SightingUpdateEvent implements Update<SightingUpdateData, Long> {
-    // ... constructor and methods
-}
-*/
+// Records SightingUpdateData and UpdateSource are assumed to be in this package or imported
+// Interface Update and class SightingUpdateEvent are assumed to be in this package or imported
 
 
-@Service // Marks this as a Spring service component
+@Service
 public class UpdateHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(UpdateHandler.class);
 
     private final SightingService sightingService;
-    // You might also inject a mapper if conversions are complex,
-    // but for direct field setting, it might not be needed.
 
-    // Constructor injection for SightingService
     public UpdateHandler(SightingService sightingService) {
         this.sightingService = sightingService;
     }
 
-    /**
-     * Handles a generic sighting update event.
-     * This method is transactional to ensure atomicity of the update.
-     *
-     * @param updateEvent The event containing update details for a sighting.
-     * @throws ResourceNotFoundException if the sighting to update is not found.
-     */
-    @Transactional // Ensures the read and write operations are part of a single transaction
+    @Transactional
     public void handleSightingUpdate(Update<SightingUpdateData, Long> updateEvent) {
         if (updateEvent == null) {
             logger.warn("Received null update event.");
@@ -72,7 +38,6 @@ public class UpdateHandler {
         if (sightingId == null || payload == null) {
             logger.error("Update event is missing sightingId or payload. Source: {}",
                     sourceInfo != null ? sourceInfo.sourceSystem() : "Unknown");
-            // Optionally throw an IllegalArgumentException
             return;
         }
 
@@ -81,13 +46,10 @@ public class UpdateHandler {
                 sourceInfo != null ? sourceInfo.sourceSystem() : "Unknown",
                 sourceInfo != null ? sourceInfo.updateTimestamp() : "N/A");
 
-        // Fetch the existing sighting. SightingService.getSightingById should handle not found.
-        // Assuming getSightingById returns the Sighting entity or throws ResourceNotFoundException
-        Sighting sightingToUpdate = sightingService.getSightingById(sightingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Sighting not found with id: " + sightingId)); //
+        // Fetch the existing sighting entity
+        Sighting sightingToUpdate = sightingService.getSightingEntityById(sightingId);
 
         // Apply updates from the payload
-        // For each field in SightingUpdateData, check if it's present and update the entity.
         payload.city().ifPresent(sightingToUpdate::setCity);
         payload.state().ifPresent(sightingToUpdate::setState);
         payload.country().ifPresent(sightingToUpdate::setCountry);
@@ -96,44 +58,51 @@ public class UpdateHandler {
         payload.summary().ifPresent(sightingToUpdate::setSummary);
         payload.latitude().ifPresent(sightingToUpdate::setLatitude);
         payload.longitude().ifPresent(sightingToUpdate::setLongitude);
-        payload.submissionStatus().ifPresent(sightingToUpdate::setSubmissionStatus);
+
+        // If submissionStatus is part of SightingUpdateData and should be updatable here:
+        payload.submissionStatus().ifPresent(status -> {
+            // You might want to use the dedicated service method for status updates
+            // to keep logic consistent, or update directly if appropriate.
+            // For direct update:
+            sightingToUpdate.setSubmissionStatus(status);
+            // Or call:
+            // sightingService.updateSightingStatus(sightingId, status);
+            // However, the current flow will save sightingToUpdate which includes this change.
+        });
         // Potentially update a "lastModifiedDate" or similar audit field on Sighting entity
         // sightingToUpdate.setLastModifiedDate(LocalDateTime.now());
         // sightingToUpdate.setLastModifiedBy(sourceInfo.updatedByUserId().orElse("sync-process"));
 
-
-        // Save the updated sighting
-        // Assuming SightingService has an update method or save method that handles updates.
-        // If SightingService.updateSighting takes DTO, you might need to map Sighting entity back to DTO,
-        // or preferably, have SightingService.updateSighting accept the entity or necessary fields.
-        // For simplicity, let's assume SightingRepository (used by SightingService) handles the save.
-        sightingService.updateSighting(sightingId, convertToDTO(sightingToUpdate)); // This assumes SightingService.updateSighting takes a DTO
-        // or sightingService.save(sightingToUpdate) if it takes entity
+        // Save the updated sighting using the Sighting entity itself
+        // We need a service method that accepts the entity or updates based on DTO like we added.
+        // Let's use the SightingService.updateSighting(Long id, SightingDTO dto) method.
+        // This requires converting the modified entity back to DTO or enhancing SightingService.
+        // For simplicity with the added SightingService.updateSighting:
+        SightingDTO updatedSightingDTO = convertToDTO(sightingToUpdate); // Convert the *modified* entity
+        sightingService.updateSighting(sightingId, updatedSightingDTO); // Call the new service method
 
         logger.info("Successfully updated sighting ID: {}. Details: {}", sightingId, payload);
-
-        // Additional post-update logic can go here (e.g., sending notifications, logging to audit trails)
     }
 
-    // Helper method to convert Sighting entity to SightingDTO if needed by SightingService
-    // This is a basic example; you'd use a proper mapper (e.g., MapStruct) in a real app.
+    // Helper method to convert Sighting entity to SightingDTO
+    // This should be consistent with the one in SightingService or use a shared mapper
     private SightingDTO convertToDTO(Sighting sighting) {
-        SightingDTO dto = new SightingDTO();
-        dto.setId(sighting.getId());
-        dto.setDateTime(sighting.getDateTime());
-        dto.setCity(sighting.getCity());
-        dto.setState(sighting.getState());
-        dto.setCountry(sighting.getCountry());
-        dto.setShape(sighting.getShape());
-        dto.setDuration(sighting.getDuration());
-        dto.setSummary(sighting.getSummary());
-        dto.setPosted(sighting.getPosted());
-        dto.setLatitude(sighting.getLatitude());
-        dto.setLongitude(sighting.getLongitude());
-        dto.setSubmittedBy(sighting.getSubmittedBy());
-        dto.setSubmissionDate(sighting.getSubmissionDate());
-        dto.setUserSubmitted(sighting.isUserSubmitted()); // Ensure field name matches DTO if different
-        dto.setSubmissionStatus(sighting.getSubmissionStatus());
-        return dto;
+        return SightingDTO.builder()
+                .id(sighting.getId())
+                .dateTime(sighting.getDateTime())
+                .city(sighting.getCity())
+                .state(sighting.getState())
+                .country(sighting.getCountry())
+                .shape(sighting.getShape())
+                .duration(sighting.getDuration())
+                .summary(sighting.getSummary())
+                .posted(sighting.getPosted())
+                .latitude(sighting.getLatitude())
+                .longitude(sighting.getLongitude())
+                .submittedBy(sighting.getSubmittedBy())
+                .submissionDate(sighting.getSubmissionDate())
+                .isUserSubmitted(sighting.isUserSubmitted())
+                .submissionStatus(sighting.getSubmissionStatus())
+                .build();
     }
 }

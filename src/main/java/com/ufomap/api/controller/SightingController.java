@@ -1,17 +1,15 @@
 package com.ufomap.api.controller;
 
 import com.ufomap.api.dto.SightingDTO;
+import com.ufomap.api.model.SubmissionStatus; // Import your enum
 import com.ufomap.api.service.SightingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable; // Correct import for Pageable
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-// Removed java.util.List import as Page is generally preferred for paginated results
 
 @RestController
 @RequestMapping("/api/sightings")
@@ -27,8 +25,7 @@ public class SightingController {
      */
     @GetMapping
     public ResponseEntity<Page<SightingDTO>> getAllSightings(Pageable pageable) {
-        // Assumes sightingService.getAllSightings now accepts Pageable and returns Page<SightingDTO>
-        return ResponseEntity.ok((Page<SightingDTO>) sightingService.getAllSightings((SpringDataWebProperties.Pageable) pageable));
+        return ResponseEntity.ok(sightingService.getAllSightings(pageable));
     }
 
     /**
@@ -38,7 +35,6 @@ public class SightingController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<SightingDTO> getSightingById(@PathVariable Long id) {
-        // Assumes sightingService.getSightingById returns SightingDTO or throws ResourceNotFoundException
         return ResponseEntity.ok(sightingService.getSightingById(id));
     }
 
@@ -59,10 +55,8 @@ public class SightingController {
             @RequestParam(required = false) String country,
             @RequestParam(required = false) String state,
             @RequestParam(required = false) String searchText,
-            Pageable pageable) { // Added Pageable parameter
-        // Assumes sightingService.getSightingsWithFilters now accepts all these params + Pageable
-        // and returns Page<SightingDTO>
-        return ResponseEntity.ok((Page<SightingDTO>) sightingService.getSightingsWithFilters(
+            Pageable pageable) {
+        return ResponseEntity.ok(sightingService.getSightingsWithFilters(
                 shape, city, country, state, searchText, pageable));
     }
 
@@ -81,10 +75,8 @@ public class SightingController {
             @RequestParam Double south,
             @RequestParam Double east,
             @RequestParam Double west,
-            Pageable pageable) { // Added Pageable parameter
-        // Assumes sightingService.getSightingsInBounds now accepts these params + Pageable
-        // and returns Page<SightingDTO>
-        return ResponseEntity.ok((Page<SightingDTO>) sightingService.getSightingsInBounds(north, south, east, west, pageable));
+            Pageable pageable) {
+        return ResponseEntity.ok(sightingService.getSightingsInBounds(north, south, east, west, pageable));
     }
 
     /**
@@ -105,10 +97,10 @@ public class SightingController {
      * @return The updated SightingDTO.
      */
     @PatchMapping("/{id}/status")
-    public <SubmissionStatus> ResponseEntity<SightingDTO> updateSightingStatus(
+    public ResponseEntity<SightingDTO> updateSightingStatus(
             @PathVariable Long id,
-            @RequestParam SubmissionStatus status) { // Changed parameter type to SubmissionStatus enum
-        // Assumes sightingService.updateSightingStatus now accepts SubmissionStatus (or its string representation)
-        return ResponseEntity.ok(sightingService.updateSightingStatus(id, status.toString())); // Or pass status directly if service expects enum
+            @RequestParam SubmissionStatus status) { // Use the enum type directly
+        // Assuming SightingService.updateSightingStatus expects the enum or its string representation
+        return ResponseEntity.ok(sightingService.updateSightingStatus(id, status.getStatus())); // or status.toString() or just status if service expects enum
     }
 }
