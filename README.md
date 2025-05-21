@@ -1,6 +1,6 @@
 # UFO Sighting API
 
-![UFO Illustration](img.png) A RESTful API for recording, retrieving, and managing UFO sighting reports. This application is built with Spring Boot and provides endpoints for querying sightings based on various criteria, submitting new sightings, and managing their status.
+A RESTful API for recording, retrieving, and managing UFO sighting reports. This application is built with Spring Boot and provides endpoints for querying sightings based on various criteria, submitting new sightings, and managing their status.
 
 ## Table of Contents
 
