@@ -13,6 +13,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service class for handling operations related to sightings.
+ * This class contains methods for retrieving, creating, and updating sightings,
+ * as well as applying filters and geographical bounds to the queries.
+ */
 @Service
 @RequiredArgsConstructor
 public class SightingService {
